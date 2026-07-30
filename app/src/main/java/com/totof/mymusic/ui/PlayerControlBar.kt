@@ -17,17 +17,22 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.totof.mymusic.model.FileNode
+import kotlin.math.log2
+import kotlin.math.pow
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PlayerControlBar(
     currentTrack: FileNode?,
     isPlaying: Boolean,
     positionMs: Long,
     durationMs: Long,
+    playbackSpeed: Float,
     onTogglePlayPause: () -> Unit,
     onNext: () -> Unit,
     onPrevious: () -> Unit,
     onSeek: (Long) -> Unit,
+    onSpeedChange: (Float) -> Unit,
     modifier: Modifier = Modifier
 ) {
     if (currentTrack == null) return
@@ -100,12 +105,36 @@ fun PlayerControlBar(
                     onValueChange = { onSeek((it * durationMs).toLong()) },
                     modifier = Modifier
                         .weight(1f)
-                        .padding(horizontal = 8.dp)
+                        .padding(horizontal = 8.dp),
+                    thumb = {} // On enlève le bouton curseur vertical
                 )
                 Text(
                     text = formatTime(durationMs),
                     style = MaterialTheme.typography.labelSmall
                 )
+            }
+
+            // Contrôle de la vitesse
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Vitesse: ${"%.2f".format(playbackSpeed)}x",
+                    style = MaterialTheme.typography.labelMedium,
+                    modifier = Modifier.width(90.dp)
+                )
+                Slider(
+                    value = log2(playbackSpeed.toDouble()).toFloat(),
+                    onValueChange = { 
+                        onSpeedChange(2.0.pow(it.toDouble()).toFloat())
+                    },
+                    valueRange = -1f..1f,
+                    modifier = Modifier.weight(1f)
+                )
+                TextButton(onClick = { onSpeedChange(1.0f) }) {
+                    Text("Reset", style = MaterialTheme.typography.labelSmall)
+                }
             }
         }
     }

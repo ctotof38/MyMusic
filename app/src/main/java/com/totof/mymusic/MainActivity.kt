@@ -55,6 +55,7 @@ class MainActivity : ComponentActivity() {
                 val isPlaying by viewModel.isPlaying.collectAsState()
                 val playbackPosition by viewModel.playbackPosition.collectAsState()
                 val playbackDuration by viewModel.playbackDuration.collectAsState()
+                val playbackSpeed by viewModel.playbackSpeed.collectAsState()
 
                 var showPlaylistDialog by remember { mutableStateOf(false) }
                 var playlistName by remember { mutableStateOf("") }
@@ -176,10 +177,12 @@ class MainActivity : ComponentActivity() {
                             isPlaying = isPlaying,
                             positionMs = playbackPosition,
                             durationMs = playbackDuration,
+                            playbackSpeed = playbackSpeed,
                             onTogglePlayPause = { viewModel.togglePlayPause() },
                             onNext = { viewModel.next() },
                             onPrevious = { viewModel.previous() },
-                            onSeek = { viewModel.seekTo(it) }
+                            onSeek = { viewModel.seekTo(it) },
+                            onSpeedChange = { viewModel.setPlaybackSpeed(it) }
                         )
                     },
                     floatingActionButton = {

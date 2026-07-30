@@ -57,6 +57,9 @@ class MusicTreeViewModel(application: Application) : AndroidViewModel(applicatio
     private val _playbackDuration = MutableStateFlow(0L)
     val playbackDuration: StateFlow<Long> = _playbackDuration.asStateFlow()
 
+    private val _playbackSpeed = MutableStateFlow(1.0f)
+    val playbackSpeed: StateFlow<Float> = _playbackSpeed.asStateFlow()
+
     private var mediaControllerFuture: ListenableFuture<MediaController>? = null
     private val mediaController: MediaController?
         get() = if (mediaControllerFuture?.isDone == true) mediaControllerFuture?.get() else null
@@ -118,6 +121,9 @@ class MusicTreeViewModel(application: Application) : AndroidViewModel(applicatio
                 }
                 override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
                     updateCurrentTrackFromMediaItem(mediaItem)
+                }
+                override fun onPlaybackParametersChanged(playbackParameters: androidx.media3.common.PlaybackParameters) {
+                    _playbackSpeed.value = playbackParameters.speed
                 }
             })
         }, MoreExecutors.directExecutor())
@@ -199,6 +205,11 @@ class MusicTreeViewModel(application: Application) : AndroidViewModel(applicatio
     fun seekTo(positionMs: Long) {
         mediaController?.seekTo(positionMs)
         _playbackPosition.value = positionMs
+    }
+
+    fun setPlaybackSpeed(speed: Float) {
+        mediaController?.setPlaybackSpeed(speed)
+        _playbackSpeed.value = speed
     }
 
     override fun onCleared() {
