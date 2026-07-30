@@ -16,10 +16,12 @@ import com.totof.mymusic.scanner.MusicScanner
 import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.MoreExecutors
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 class MusicTreeViewModel(application: Application) : AndroidViewModel(application) {
@@ -49,6 +51,12 @@ class MusicTreeViewModel(application: Application) : AndroidViewModel(applicatio
     private val _isPlaying = MutableStateFlow(false)
     val isPlaying: StateFlow<Boolean> = _isPlaying.asStateFlow()
 
+    private val _playbackPosition = MutableStateFlow(0L)
+    val playbackPosition: StateFlow<Long> = _playbackPosition.asStateFlow()
+
+    private val _playbackDuration = MutableStateFlow(0L)
+    val playbackDuration: StateFlow<Long> = _playbackDuration.asStateFlow()
+
     private var mediaControllerFuture: ListenableFuture<MediaController>? = null
     private val mediaController: MediaController?
         get() = if (mediaControllerFuture?.isDone == true) mediaControllerFuture?.get() else null
@@ -56,6 +64,21 @@ class MusicTreeViewModel(application: Application) : AndroidViewModel(applicatio
     init {
         initializeController()
         observePlaylists()
+        startPlaybackProgressUpdate()
+    }
+
+    private fun startPlaybackProgressUpdate() {
+        viewModelScope.launch {
+            while (isActive) {
+                mediaController?.let { controller ->
+                    if (controller.isPlaying) {
+                        _playbackPosition.value = controller.currentPosition
+                        _playbackDuration.value = controller.duration.coerceAtLeast(0L)
+                    }
+                }
+                delay(500)
+            }
+        }
     }
 
     private fun observePlaylists() {
@@ -171,6 +194,11 @@ class MusicTreeViewModel(application: Application) : AndroidViewModel(applicatio
 
     fun previous() {
         mediaController?.seekToPrevious()
+    }
+
+    fun seekTo(positionMs: Long) {
+        mediaController?.seekTo(positionMs)
+        _playbackPosition.value = positionMs
     }
 
     override fun onCleared() {

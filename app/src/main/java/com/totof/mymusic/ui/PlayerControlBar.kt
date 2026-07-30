@@ -22,9 +22,12 @@ import com.totof.mymusic.model.FileNode
 fun PlayerControlBar(
     currentTrack: FileNode?,
     isPlaying: Boolean,
+    positionMs: Long,
+    durationMs: Long,
     onTogglePlayPause: () -> Unit,
     onNext: () -> Unit,
     onPrevious: () -> Unit,
+    onSeek: (Long) -> Unit,
     modifier: Modifier = Modifier
 ) {
     if (currentTrack == null) return
@@ -36,50 +39,81 @@ fun PlayerControlBar(
         modifier = modifier
             .fillMaxWidth()
             .navigationBarsPadding()
-            .padding(bottom = 20.dp)
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(8.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .padding(horizontal = 16.dp, vertical = 8.dp)
         ) {
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(end = 8.dp)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = currentTrack.title ?: currentTrack.name,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                if (!currentTrack.artist.isNullOrBlank() && currentTrack.artist != "<unknown>") {
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(end = 8.dp)
+                ) {
                     Text(
-                        text = currentTrack.artist,
-                        style = MaterialTheme.typography.bodySmall,
+                        text = currentTrack.title ?: currentTrack.name,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
+                    if (!currentTrack.artist.isNullOrBlank() && currentTrack.artist != "<unknown>") {
+                        Text(
+                            text = currentTrack.artist,
+                            style = MaterialTheme.typography.bodySmall,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+
+                IconButton(onClick = onPrevious) {
+                    Icon(Icons.Default.SkipPrevious, contentDescription = "Précédent")
+                }
+
+                IconButton(onClick = onTogglePlayPause) {
+                    Icon(
+                        imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                        contentDescription = if (isPlaying) "Pause" else "Lire"
+                    )
+                }
+
+                IconButton(onClick = onNext) {
+                    Icon(Icons.Default.SkipNext, contentDescription = "Suivant")
                 }
             }
 
-            IconButton(onClick = onPrevious) {
-                Icon(Icons.Default.SkipPrevious, contentDescription = "Précédent")
-            }
-            
-            IconButton(onClick = onTogglePlayPause) {
-                Icon(
-                    imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                    contentDescription = if (isPlaying) "Pause" else "Lire"
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = formatTime(positionMs),
+                    style = MaterialTheme.typography.labelSmall
                 )
-            }
-
-            IconButton(onClick = onNext) {
-                Icon(Icons.Default.SkipNext, contentDescription = "Suivant")
+                Slider(
+                    value = if (durationMs > 0) positionMs.toFloat() / durationMs.toFloat() else 0f,
+                    onValueChange = { onSeek((it * durationMs).toLong()) },
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(horizontal = 8.dp)
+                )
+                Text(
+                    text = formatTime(durationMs),
+                    style = MaterialTheme.typography.labelSmall
+                )
             }
         }
     }
+}
+
+private fun formatTime(ms: Long): String {
+    val totalSeconds = ms / 1000
+    val minutes = totalSeconds / 60
+    val seconds = totalSeconds % 60
+    return "%02d:%02d".format(minutes, seconds)
 }

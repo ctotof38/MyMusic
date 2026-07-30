@@ -53,6 +53,8 @@ class MainActivity : ComponentActivity() {
                 val editingPlaylist by viewModel.editingPlaylist.collectAsState()
                 val currentTrack by viewModel.currentTrack.collectAsState()
                 val isPlaying by viewModel.isPlaying.collectAsState()
+                val playbackPosition by viewModel.playbackPosition.collectAsState()
+                val playbackDuration by viewModel.playbackDuration.collectAsState()
 
                 var showPlaylistDialog by remember { mutableStateOf(false) }
                 var playlistName by remember { mutableStateOf("") }
@@ -172,9 +174,12 @@ class MainActivity : ComponentActivity() {
                         PlayerControlBar(
                             currentTrack = currentTrack,
                             isPlaying = isPlaying,
+                            positionMs = playbackPosition,
+                            durationMs = playbackDuration,
                             onTogglePlayPause = { viewModel.togglePlayPause() },
                             onNext = { viewModel.next() },
-                            onPrevious = { viewModel.previous() }
+                            onPrevious = { viewModel.previous() },
+                            onSeek = { viewModel.seekTo(it) }
                         )
                     },
                     floatingActionButton = {
