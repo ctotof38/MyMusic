@@ -140,7 +140,7 @@ fun TrackItem(track: FileNode, onRemove: () -> Unit, onPlay: () -> Unit, isCurre
             )
             Column(modifier = Modifier.weight(1f).padding(horizontal = 8.dp)) {
                 Text(
-                    text = track.title ?: track.name,
+                    text = track.displayName,
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal,
                     color = if (isCurrent) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface

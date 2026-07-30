@@ -123,14 +123,8 @@ fun FileNodeItem(
                     .padding(start = 4.dp)
                     .weight(1f)
             ) {
-                val displayText = if (node.isFile && !node.title.isNullOrBlank()) {
-                    node.title
-                } else {
-                    node.name
-                }
-                
                 Text(
-                    text = displayText,
+                    text = node.displayName,
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal,
                     color = if (isCurrent) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,

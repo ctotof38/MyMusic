@@ -138,7 +138,7 @@ class MainActivity : ComponentActivity() {
                                 ) {
                                     Text(
                                         text = "My Music",
-                                        color = OnSpringGreen,
+                                        color = Color.Black,
                                         style = MaterialTheme.typography.titleLarge
                                     )
                                 }
@@ -146,11 +146,11 @@ class MainActivity : ComponentActivity() {
                                 TabRow(
                                     selectedTabIndex = currentTab.ordinal,
                                     containerColor = Color.Transparent,
-                                    contentColor = OnSpringGreen,
+                                    contentColor = Color.Black,
                                     indicator = { tabPositions ->
                                         TabRowDefaults.SecondaryIndicator(
                                             Modifier.tabIndicatorOffset(tabPositions[currentTab.ordinal]),
-                                            color = OnSpringGreen
+                                            color = Color.Black
                                         )
                                     }
                                 ) {

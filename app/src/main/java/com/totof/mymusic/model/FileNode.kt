@@ -8,6 +8,17 @@ data class FileNode(
     val artist: String? = null,
     val children: MutableList<FileNode> = mutableListOf()
 ) {
+    val displayName: String
+        get() {
+            if (!isFile) return name
+            val isGenericTitle = title?.trim()?.lowercase()?.matches(Regex("track\\s*\\d+")) ?: true
+            return if (isGenericTitle || title.isNullOrBlank()) {
+                name.substringBeforeLast(".")
+            } else {
+                title
+            }
+        }
+
     // Helper to find or create a child directory
     fun getOrCreateDirectory(name: String, path: String): FileNode {
         return children.find { it.name == name && !it.isFile }

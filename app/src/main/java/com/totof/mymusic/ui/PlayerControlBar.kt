@@ -55,7 +55,7 @@ fun PlayerControlBar(
                         .padding(end = 8.dp)
                 ) {
                     Text(
-                        text = currentTrack.title ?: currentTrack.name,
+                        text = currentTrack.displayName,
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Bold,
                         maxLines = 1,
