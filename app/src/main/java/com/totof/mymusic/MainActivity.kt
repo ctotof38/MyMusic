@@ -13,19 +13,17 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Folder
-import androidx.compose.material.icons.filled.PlaylistPlay
 import androidx.compose.material3.*
-import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -35,8 +33,6 @@ import com.totof.mymusic.ui.MusicTreeViewModel
 import com.totof.mymusic.ui.PlaylistView
 import com.totof.mymusic.ui.PlayerControlBar
 import com.totof.mymusic.ui.theme.MyMusicTheme
-import com.totof.mymusic.ui.theme.SpringGreen
-import com.totof.mymusic.ui.theme.OnSpringGreen
 
 class MainActivity : ComponentActivity() {
     @OptIn(ExperimentalMaterial3Api::class)
@@ -144,13 +140,13 @@ class MainActivity : ComponentActivity() {
                                     )
                                 }
                                 
-                                TabRow(
+                                SecondaryTabRow(
                                     selectedTabIndex = currentTab.ordinal,
                                     containerColor = Color.Transparent,
                                     contentColor = Color.Black,
-                                    indicator = { tabPositions ->
+                                    indicator = {
                                         TabRowDefaults.SecondaryIndicator(
-                                            Modifier.tabIndicatorOffset(tabPositions[currentTab.ordinal]),
+                                            Modifier.tabIndicatorOffset(currentTab.ordinal),
                                             color = Color.Black
                                         )
                                     }
@@ -165,7 +161,7 @@ class MainActivity : ComponentActivity() {
                                         selected = currentTab == MusicTab.Playlists,
                                         onClick = { viewModel.setTab(MusicTab.Playlists) },
                                         text = { Text("Playlists") },
-                                        icon = { Icon(Icons.Default.PlaylistPlay, contentDescription = null) }
+                                        icon = { Icon(Icons.AutoMirrored.Filled.PlaylistPlay, contentDescription = null) }
                                     )
                                 }
                             }

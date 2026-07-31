@@ -54,7 +54,7 @@ class MusicScanner(private val context: Context) {
             var currentNode = root
             var currentPathBuilder = ""
             
-            for (i in 0 until segments.size - 1) {
+            for (i in 0 until (segments.size - 1)) {
                 val segment = segments[i]
                 currentPathBuilder += "/$segment"
                 currentNode = currentNode.getOrCreateDirectory(segment, currentPathBuilder)

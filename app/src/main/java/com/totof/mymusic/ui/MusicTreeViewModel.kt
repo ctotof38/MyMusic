@@ -48,7 +48,7 @@ class MusicTreeViewModel(application: Application) : AndroidViewModel(applicatio
     private val _currentTrack = MutableStateFlow<FileNode?>(null)
     val currentTrack: StateFlow<FileNode?> = _currentTrack.asStateFlow()
 
-    private val _isPlaying = MutableStateFlow(false)
+    private val _isPlaying = MutableStateFlow(value = false)
     val isPlaying: StateFlow<Boolean> = _isPlaying.asStateFlow()
 
     private val _playbackPosition = MutableStateFlow(0L)
@@ -96,7 +96,7 @@ class MusicTreeViewModel(application: Application) : AndroidViewModel(applicatio
                                 isFile = true,
                                 fullPath = track.fullPath,
                                 title = track.title,
-                                artist = track.artist
+                                artist = track.artist,
                             )
                         }
                     )
@@ -115,17 +115,19 @@ class MusicTreeViewModel(application: Application) : AndroidViewModel(applicatio
         mediaControllerFuture = MediaController.Builder(getApplication(), sessionToken).buildAsync()
         mediaControllerFuture?.addListener({
             updatePlaybackState()
-            mediaController?.addListener(object : Player.Listener {
-                override fun onIsPlayingChanged(isPlaying: Boolean) {
-                    _isPlaying.value = isPlaying
+            mediaController?.addListener(
+                object : Player.Listener {
+                    override fun onIsPlayingChanged(isPlaying: Boolean) {
+                        _isPlaying.value = isPlaying
+                    }
+                    override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+                        updateCurrentTrackFromMediaItem(mediaItem)
+                    }
+                    override fun onPlaybackParametersChanged(playbackParameters: androidx.media3.common.PlaybackParameters) {
+                        _playbackSpeed.value = playbackParameters.speed
+                    }
                 }
-                override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
-                    updateCurrentTrackFromMediaItem(mediaItem)
-                }
-                override fun onPlaybackParametersChanged(playbackParameters: androidx.media3.common.PlaybackParameters) {
-                    _playbackSpeed.value = playbackParameters.speed
-                }
-            })
+            )
         }, MoreExecutors.directExecutor())
     }
 
@@ -223,10 +225,6 @@ class MusicTreeViewModel(application: Application) : AndroidViewModel(applicatio
 
     fun setTab(tab: MusicTab) {
         _currentTab.value = tab
-        if (tab == MusicTab.Explorer && _editingPlaylist.value == null) {
-            // If going back to explorer and not adding to a specific playlist, maybe clear selection?
-            // Actually, keep it for now.
-        }
     }
 
     fun selectPlaylistForEditing(playlist: Playlist?) {
@@ -245,26 +243,26 @@ class MusicTreeViewModel(application: Application) : AndroidViewModel(applicatio
     fun addSelectedTracksToPlaylist() {
         val playlist = _editingPlaylist.value ?: return
         val state = _uiState.value
-        if (state is MusicUiState.Success) {
-            val selected = _selectedPaths.value
-            val newTracks = state.root.getAllFiles().filter { it.fullPath in selected }
-            
-            if (newTracks.isNotEmpty()) {
-                viewModelScope.launch(Dispatchers.IO) {
-                    val entity = musicDao.getPlaylistByName(playlist.name)
-                    if (entity != null) {
-                        val trackEntities = newTracks.map {
-                            TrackEntity(
-                                playlistId = entity.id,
-                                name = it.name,
-                                fullPath = it.fullPath,
-                                title = it.title,
-                                artist = it.artist
-                            )
-                        }
-                        musicDao.insertTracks(trackEntities)
-                        _selectedPaths.value = emptySet()
+        if (state !is MusicUiState.Success) return
+
+        val selected = _selectedPaths.value
+        val newTracks = state.root.getAllFiles().filter { it.fullPath in selected }
+
+        if (newTracks.isNotEmpty()) {
+            viewModelScope.launch(Dispatchers.IO) {
+                val entity = musicDao.getPlaylistByName(playlist.name)
+                if (entity != null) {
+                    val trackEntities = newTracks.map {
+                        TrackEntity(
+                            playlistId = entity.id,
+                            name = it.name,
+                            fullPath = it.fullPath,
+                            title = it.title,
+                            artist = it.artist
+                        )
                     }
+                    musicDao.insertTracks(trackEntities)
+                    _selectedPaths.value = emptySet()
                 }
             }
         }

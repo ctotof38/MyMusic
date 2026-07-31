@@ -1,7 +1,5 @@
 package com.totof.mymusic.ui
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Pause
@@ -12,7 +10,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -33,7 +30,7 @@ fun PlayerControlBar(
     onPrevious: () -> Unit,
     onSeek: (Long) -> Unit,
     onSpeedChange: (Float) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     if (currentTrack == null) return
 
@@ -43,7 +40,7 @@ fun PlayerControlBar(
         color = MaterialTheme.colorScheme.surfaceVariant,
         modifier = modifier
             .fillMaxWidth()
-            .navigationBarsPadding()
+            .navigationBarsPadding(),
     ) {
         Column(
             modifier = Modifier
@@ -66,7 +63,7 @@ fun PlayerControlBar(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
-                    if (!currentTrack.artist.isNullOrBlank() && currentTrack.artist != "<unknown>") {
+                    if (!currentTrack.artist.isNullOrBlank() && (currentTrack.artist != "<unknown>")) {
                         Text(
                             text = currentTrack.artist,
                             style = MaterialTheme.typography.bodySmall,

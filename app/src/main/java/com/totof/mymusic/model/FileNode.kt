@@ -14,7 +14,7 @@ data class FileNode(
         get() {
             if (!isFile) return name
             val isGenericTitle = title?.trim()?.lowercase()?.matches(Regex("track\\s*\\d+")) ?: true
-            return if (isGenericTitle || title.isNullOrBlank()) {
+            return if (isGenericTitle || title.isBlank()) {
                 name.substringBeforeLast(".")
             } else {
                 title
