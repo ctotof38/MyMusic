@@ -8,6 +8,8 @@ data class FileNode(
     val artist: String? = null,
     val children: MutableList<FileNode> = mutableListOf()
 ) {
+    var parent: FileNode? = null
+
     val displayName: String
         get() {
             if (!isFile) return name
@@ -22,7 +24,10 @@ data class FileNode(
     // Helper to find or create a child directory
     fun getOrCreateDirectory(name: String, path: String): FileNode {
         return children.find { it.name == name && !it.isFile }
-            ?: FileNode(name, false, path).also { children.add(it) }
+            ?: FileNode(name, false, path).also { 
+                it.parent = this
+                children.add(it) 
+            }
     }
 
     // Sort children: directories first, then files, both alphabetically

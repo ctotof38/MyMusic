@@ -61,15 +61,15 @@ class MusicScanner(private val context: Context) {
             }
             
             val fileName = segments.last()
-            currentNode.children.add(
-                FileNode(
-                    name = fileName,
-                    isFile = true,
-                    fullPath = mp3.path,
-                    title = mp3.title,
-                    artist = mp3.artist
-                )
+            val newNode = FileNode(
+                name = fileName,
+                isFile = true,
+                fullPath = mp3.path,
+                title = mp3.title,
+                artist = mp3.artist
             )
+            newNode.parent = currentNode
+            currentNode.children.add(newNode)
         }
     }
 

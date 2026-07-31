@@ -154,7 +154,9 @@ class MusicTreeViewModel(application: Application) : AndroidViewModel(applicatio
         
         controller.shuffleModeEnabled = false // Disable shuffle when playing a specific track
         
-        val mediaItems = (playlist ?: listOf(track)).map {
+        val effectivePlaylist = playlist ?: track.parent?.children?.filter { it.isFile } ?: listOf(track)
+
+        val mediaItems = effectivePlaylist.map {
             MediaItem.Builder()
                 .setMediaId(it.fullPath)
                 .setUri(it.fullPath)
@@ -163,7 +165,7 @@ class MusicTreeViewModel(application: Application) : AndroidViewModel(applicatio
         
         val startIndex = mediaItems.indexOfFirst { it.mediaId == track.fullPath }
         
-        controller.setMediaItems(mediaItems, startIndex, 0L)
+        controller.setMediaItems(mediaItems, startIndex.coerceAtLeast(0), 0L)
         controller.prepare()
         controller.play()
     }

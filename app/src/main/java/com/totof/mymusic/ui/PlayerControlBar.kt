@@ -130,7 +130,8 @@ fun PlayerControlBar(
                         onSpeedChange(2.0.pow(it.toDouble()).toFloat())
                     },
                     valueRange = -1f..1f,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    thumb = {} // On enlève aussi le curseur vertical pour la vitesse
                 )
                 TextButton(onClick = { onSpeedChange(1.0f) }) {
                     Text("Reset", style = MaterialTheme.typography.labelSmall)
