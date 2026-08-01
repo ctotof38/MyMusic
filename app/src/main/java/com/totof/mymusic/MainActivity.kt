@@ -52,6 +52,7 @@ class MainActivity : ComponentActivity() {
                 val playbackPosition by viewModel.playbackPosition.collectAsState()
                 val playbackDuration by viewModel.playbackDuration.collectAsState()
                 val playbackSpeed by viewModel.playbackSpeed.collectAsState()
+                val repeatMode by viewModel.repeatMode.collectAsState()
 
                 var showPlaylistDialog by remember { mutableStateOf(false) }
                 var playlistName by remember { mutableStateOf("") }
@@ -236,12 +237,15 @@ class MainActivity : ComponentActivity() {
                                 PlaylistView(
                                     playlists = playlists,
                                     editingPlaylist = editingPlaylist,
+                                    repeatMode = repeatMode,
                                     onDeletePlaylist = { viewModel.deletePlaylist(it) },
                                     onSelectPlaylist = { viewModel.selectPlaylistForEditing(it) },
                                     onRemoveTrack = { playlist, track -> viewModel.removeTrackFromPlaylist(playlist, track) },
                                     onAddTracks = { viewModel.setTab(MusicTab.Explorer) },
                                     onPlayTrack = { track, list -> viewModel.playTrack(track, list) },
                                     onPlayPlaylist = { playlist, shuffle -> viewModel.playPlaylist(playlist, shuffle) },
+                                    onMoveTrack = { playlist, from, to -> viewModel.moveTrack(playlist, from, to) },
+                                    onToggleRepeat = { viewModel.toggleRepeatMode() },
                                     currentTrackPath = currentTrack?.fullPath
                                 )
                             }

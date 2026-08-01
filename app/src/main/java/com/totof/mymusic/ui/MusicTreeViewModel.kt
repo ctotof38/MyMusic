@@ -60,6 +60,9 @@ class MusicTreeViewModel(application: Application) : AndroidViewModel(applicatio
     private val _playbackSpeed = MutableStateFlow(1.0f)
     val playbackSpeed: StateFlow<Float> = _playbackSpeed.asStateFlow()
 
+    private val _repeatMode = MutableStateFlow(Player.REPEAT_MODE_OFF)
+    val repeatMode: StateFlow<Int> = _repeatMode.asStateFlow()
+
     private var mediaControllerFuture: ListenableFuture<MediaController>? = null
     private val mediaController: MediaController?
         get() = if (mediaControllerFuture?.isDone == true) mediaControllerFuture?.get() else null
@@ -90,15 +93,17 @@ class MusicTreeViewModel(application: Application) : AndroidViewModel(applicatio
                 val playlistModels = entities.map { entity ->
                     Playlist(
                         name = entity.playlist.name,
-                        tracks = entity.tracks.map { track ->
-                            FileNode(
-                                name = track.name,
-                                isFile = true,
-                                fullPath = track.fullPath,
-                                title = track.title,
-                                artist = track.artist,
-                            )
-                        }
+                        tracks = entity.tracks
+                            .sortedBy { it.position }
+                            .map { track ->
+                                FileNode(
+                                    name = track.name,
+                                    isFile = true,
+                                    fullPath = track.fullPath,
+                                    title = track.title,
+                                    artist = track.artist,
+                                )
+                            }
                     )
                 }
                 _playlists.value = playlistModels
@@ -125,6 +130,9 @@ class MusicTreeViewModel(application: Application) : AndroidViewModel(applicatio
                     }
                     override fun onPlaybackParametersChanged(playbackParameters: androidx.media3.common.PlaybackParameters) {
                         _playbackSpeed.value = playbackParameters.speed
+                    }
+                    override fun onRepeatModeChanged(repeatMode: Int) {
+                        _repeatMode.value = repeatMode
                     }
                 }
             )
@@ -216,6 +224,16 @@ class MusicTreeViewModel(application: Application) : AndroidViewModel(applicatio
         _playbackSpeed.value = speed
     }
 
+    fun toggleRepeatMode() {
+        val controller = mediaController ?: return
+        val nextMode = when (controller.repeatMode) {
+            Player.REPEAT_MODE_OFF -> Player.REPEAT_MODE_ALL
+            else -> Player.REPEAT_MODE_OFF
+        }
+        controller.repeatMode = nextMode
+        _repeatMode.value = nextMode
+    }
+
     override fun onCleared() {
         mediaControllerFuture?.let {
             MediaController.releaseFuture(it)
@@ -252,13 +270,15 @@ class MusicTreeViewModel(application: Application) : AndroidViewModel(applicatio
             viewModelScope.launch(Dispatchers.IO) {
                 val entity = musicDao.getPlaylistByName(playlist.name)
                 if (entity != null) {
-                    val trackEntities = newTracks.map {
+                    val currentTracksSize = playlist.tracks.size
+                    val trackEntities = newTracks.mapIndexed { index, it ->
                         TrackEntity(
                             playlistId = entity.id,
                             name = it.name,
                             fullPath = it.fullPath,
                             title = it.title,
-                            artist = it.artist
+                            artist = it.artist,
+                            position = currentTracksSize + index
                         )
                     }
                     musicDao.insertTracks(trackEntities)
@@ -292,13 +312,14 @@ class MusicTreeViewModel(application: Application) : AndroidViewModel(applicatio
             if (tracks.isNotEmpty()) {
                 viewModelScope.launch(Dispatchers.IO) {
                     val playlistId = musicDao.insertPlaylist(PlaylistEntity(name = name))
-                    val trackEntities = tracks.map {
+                    val trackEntities = tracks.mapIndexed { index, it ->
                         TrackEntity(
                             playlistId = playlistId,
                             name = it.name,
                             fullPath = it.fullPath,
                             title = it.title,
-                            artist = it.artist
+                            artist = it.artist,
+                            position = index
                         )
                     }
                     musicDao.insertTracks(trackEntities)
@@ -313,6 +334,26 @@ class MusicTreeViewModel(application: Application) : AndroidViewModel(applicatio
             val entity = musicDao.getPlaylistByName(playlist.name)
             if (entity != null) {
                 musicDao.deletePlaylist(entity)
+            }
+        }
+    }
+
+    fun moveTrack(playlist: Playlist, fromIndex: Int, toIndex: Int) {
+        if (fromIndex == toIndex) return
+        
+        viewModelScope.launch(Dispatchers.IO) {
+            val playlistEntity = musicDao.getPlaylistByName(playlist.name) ?: return@launch
+            val currentEntities = musicDao.getTracksForPlaylistSync(playlistEntity.id)
+            
+            if (currentEntities.size == playlist.tracks.size) {
+                val reordered = currentEntities.toMutableList()
+                val entityToMove = reordered.removeAt(fromIndex)
+                reordered.add(toIndex, entityToMove)
+                
+                val entitiesToUpdate = reordered.mapIndexed { index, entity ->
+                    entity.copy(position = index)
+                }
+                musicDao.updateTracks(entitiesToUpdate)
             }
         }
     }

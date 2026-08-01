@@ -8,14 +8,20 @@ interface MusicDao {
     @Query("SELECT * FROM playlists")
     fun getAllPlaylists(): Flow<List<PlaylistEntity>>
 
-    @Query("SELECT * FROM tracks WHERE playlistId = :playlistId")
+    @Query("SELECT * FROM tracks WHERE playlistId = :playlistId ORDER BY position ASC")
     fun getTracksForPlaylist(playlistId: Long): Flow<List<TrackEntity>>
+
+    @Query("SELECT * FROM tracks WHERE playlistId = :playlistId ORDER BY position ASC")
+    suspend fun getTracksForPlaylistSync(playlistId: Long): List<TrackEntity>
 
     @Insert
     suspend fun insertPlaylist(playlist: PlaylistEntity): Long
 
     @Insert
     suspend fun insertTracks(tracks: List<TrackEntity>)
+
+    @Update
+    suspend fun updateTracks(tracks: List<TrackEntity>)
 
     @Delete
     suspend fun deletePlaylist(playlist: PlaylistEntity)

@@ -12,3 +12,4 @@ val Pink40 = Color(0xFF7D5260)
 
 val SpringGreen = Color(0xFFC8E6C9)
 val OnSpringGreen = Color(0xFF1B5E20)
+val AppOrange = Color(0xFFF87050)

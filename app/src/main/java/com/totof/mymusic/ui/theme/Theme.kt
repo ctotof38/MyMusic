@@ -12,14 +12,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 
 private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
+    primary = AppOrange,
+    secondary = AppOrange,
     tertiary = Pink80
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
+    primary = AppOrange,
+    secondary = AppOrange,
     tertiary = Pink40
 
     /* Other default colors to override
@@ -36,8 +36,8 @@ private val LightColorScheme = lightColorScheme(
 @Composable
 fun MyMusicTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
+    // On désactive la couleur dynamique par défaut pour privilégier l'orange personnalisé
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {

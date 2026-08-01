@@ -1,46 +1,55 @@
 package com.totof.mymusic.ui
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.MusicNote
-import androidx.compose.material.icons.filled.QueueMusic
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Shuffle
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
+import androidx.media3.common.Player
 import com.totof.mymusic.model.FileNode
 import com.totof.mymusic.model.Playlist
+import kotlin.math.roundToInt
 
 @Composable
 fun PlaylistView(
     playlists: List<Playlist>,
     editingPlaylist: Playlist?,
+    repeatMode: Int,
     onDeletePlaylist: (Playlist) -> Unit,
     onSelectPlaylist: (Playlist?) -> Unit,
     onRemoveTrack: (Playlist, FileNode) -> Unit,
     onAddTracks: () -> Unit,
     onPlayTrack: (FileNode, List<FileNode>) -> Unit,
     onPlayPlaylist: (Playlist, Boolean) -> Unit,
+    onMoveTrack: (Playlist, Int, Int) -> Unit,
+    onToggleRepeat: () -> Unit,
     currentTrackPath: String?,
     modifier: Modifier = Modifier
 ) {
     if (editingPlaylist != null) {
         PlaylistDetailView(
             playlist = editingPlaylist,
+            repeatMode = repeatMode,
             onBack = { onSelectPlaylist(null) },
             onRemoveTrack = { onRemoveTrack(editingPlaylist, it) },
             onAddTracks = onAddTracks,
             onPlayTrack = { onPlayTrack(it, editingPlaylist.tracks) },
             onPlayPlaylist = { shuffle -> onPlayPlaylist(editingPlaylist, shuffle) },
+            onMoveTrack = { from, to -> onMoveTrack(editingPlaylist, from, to) },
+            onToggleRepeat = onToggleRepeat,
             currentTrackPath = currentTrackPath,
             modifier = modifier
         )
@@ -62,14 +71,21 @@ fun PlaylistView(
 @Composable
 fun PlaylistDetailView(
     playlist: Playlist,
+    repeatMode: Int,
     onBack: () -> Unit,
     onRemoveTrack: (FileNode) -> Unit,
     onAddTracks: () -> Unit,
     onPlayTrack: (FileNode) -> Unit,
     onPlayPlaylist: (Boolean) -> Unit,
+    onMoveTrack: (Int, Int) -> Unit,
+    onToggleRepeat: () -> Unit,
     currentTrackPath: String?,
     modifier: Modifier = Modifier
 ) {
+    var draggedItemIndex by remember { mutableStateOf<Int?>(null) }
+    var draggingOffset by remember { mutableStateOf(0f) }
+    val listState = rememberLazyListState()
+
     Column(modifier = modifier.fillMaxSize().padding(8.dp)) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -86,6 +102,13 @@ fun PlaylistDetailView(
             IconButton(onClick = { onPlayPlaylist(true) }) {
                 Icon(Icons.Default.Shuffle, contentDescription = "Aléatoire")
             }
+            IconButton(onClick = onToggleRepeat) {
+                Icon(
+                    imageVector = if (repeatMode == Player.REPEAT_MODE_ALL) Icons.Default.RepeatOn else Icons.Default.Repeat,
+                    contentDescription = "Répéter",
+                    tint = if (repeatMode == Player.REPEAT_MODE_ALL) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
+                )
+            }
             Button(onClick = onAddTracks, modifier = Modifier.padding(start = 8.dp)) {
                 Text("Ajouter")
             }
@@ -96,13 +119,52 @@ fun PlaylistDetailView(
                 Text("Cette playlist est vide")
             }
         } else {
-            LazyColumn(modifier = Modifier.weight(1f)) {
-                items(playlist.tracks) { track ->
+            LazyColumn(
+                modifier = Modifier.weight(1f),
+                state = listState
+            ) {
+                itemsIndexed(playlist.tracks) { index, track ->
+                    val isDragging = draggedItemIndex == index
+                    val offset = if (isDragging) draggingOffset else 0f
+                    
                     TrackItem(
                         track = track,
                         onRemove = { onRemoveTrack(track) },
                         onPlay = { onPlayTrack(track) },
-                        isCurrent = track.fullPath == currentTrackPath
+                        isCurrent = track.fullPath == currentTrackPath,
+                        modifier = Modifier
+                            .zIndex(if (isDragging) 1f else 0f)
+                            .offset { IntOffset(0, offset.roundToInt()) }
+                            .pointerInput(playlist.tracks) {
+                                detectDragGesturesAfterLongPress(
+                                    onDragStart = { _ ->
+                                        draggedItemIndex = index
+                                    },
+                                    onDrag = { change, dragAmount ->
+                                        change.consume()
+                                        draggingOffset += dragAmount.y
+                                        
+                                        val threshold = 120f 
+                                        if (draggingOffset > threshold && index < playlist.tracks.size - 1) {
+                                            onMoveTrack(index, index + 1)
+                                            draggedItemIndex = index + 1
+                                            draggingOffset -= threshold
+                                        } else if (draggingOffset < -threshold && index > 0) {
+                                            onMoveTrack(index, index - 1)
+                                            draggedItemIndex = index - 1
+                                            draggingOffset += threshold
+                                        }
+                                    },
+                                    onDragEnd = {
+                                        draggedItemIndex = null
+                                        draggingOffset = 0f
+                                    },
+                                    onDragCancel = {
+                                        draggedItemIndex = null
+                                        draggingOffset = 0f
+                                    }
+                                )
+                            }
                     )
                 }
             }
@@ -118,9 +180,15 @@ fun PlaylistDetailView(
 }
 
 @Composable
-fun TrackItem(track: FileNode, onRemove: () -> Unit, onPlay: () -> Unit, isCurrent: Boolean) {
+fun TrackItem(
+    track: FileNode, 
+    onRemove: () -> Unit, 
+    onPlay: () -> Unit, 
+    isCurrent: Boolean,
+    modifier: Modifier = Modifier
+) {
     Card(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .padding(vertical = 2.dp)
             .clickable { onPlay() },
@@ -145,7 +213,7 @@ fun TrackItem(track: FileNode, onRemove: () -> Unit, onPlay: () -> Unit, isCurre
                     fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal,
                     color = if (isCurrent) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                 )
-                if (!track.artist.isNullOrBlank() && track.artist != "<unknown>") {
+                if (!track.artist.isNullOrBlank() && (track.artist != "<unknown>")) {
                     Text(
                         text = track.artist,
                         style = MaterialTheme.typography.bodySmall,

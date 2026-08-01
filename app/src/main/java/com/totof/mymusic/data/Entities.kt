@@ -29,5 +29,6 @@ data class TrackEntity(
     val name: String,
     val fullPath: String,
     val title: String?,
-    val artist: String?
+    val artist: String?,
+    val position: Int = 0
 )
