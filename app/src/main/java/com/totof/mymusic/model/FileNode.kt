@@ -13,7 +13,7 @@ data class FileNode(
     val displayName: String
         get() {
             if (!isFile) return name
-            val isGenericTitle = title?.trim()?.lowercase()?.matches(Regex("track\\s*\\d+")) ?: true
+            val isGenericTitle = title?.contains("track", ignoreCase = true) ?: true
             return if (isGenericTitle || title.isBlank()) {
                 name.substringBeforeLast(".")
             } else {
