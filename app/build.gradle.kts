@@ -20,13 +20,34 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        testProguardFiles(
+            getDefaultProguardFile("proguard-android-optimize.txt"),
+            "proguard-rules.pro"
+        )
+
+        ndk {
+            abiFilters.add("arm64-v8a")
+        }
+    }
+
+    androidResources {
+        localeFilters += setOf("en", "fr")
     }
 
     buildTypes {
         release {
-            optimization {
-                enable = false
-            }
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+        }
+        create("staging") {
+            initWith(getByName("release"))
+            matchingFallbacks.add("release")
+            signingConfig = signingConfigs.getByName("debug")
+            applicationIdSuffix = ".staging"
         }
     }
     compileOptions {
@@ -41,7 +62,12 @@ android {
 androidComponents {
     onVariants(selector().withBuildType("debug")) { variant ->
         variant.outputs.forEach { output ->
-            output.outputFileName.set("music.apk")
+            output.outputFileName.set("music-debug.apk")
+        }
+    }
+    onVariants(selector().withBuildType("staging")) { variant ->
+        variant.outputs.forEach { output ->
+            output.outputFileName.set("music-staging.apk")
         }
     }
 }
