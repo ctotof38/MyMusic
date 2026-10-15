@@ -63,6 +63,9 @@ class MusicTreeViewModel(application: Application) : AndroidViewModel(applicatio
     private val _repeatMode = MutableStateFlow(Player.REPEAT_MODE_OFF)
     val repeatMode: StateFlow<Int> = _repeatMode.asStateFlow()
 
+    private val _stopAfterCurrentTrack = MutableStateFlow(false)
+    val stopAfterCurrentTrack: StateFlow<Boolean> = _stopAfterCurrentTrack.asStateFlow()
+
     private var mediaControllerFuture: ListenableFuture<MediaController>? = null
     private val mediaController: MediaController?
         get() = if (mediaControllerFuture?.isDone == true) mediaControllerFuture?.get() else null
@@ -159,12 +162,24 @@ class MusicTreeViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
 
+    fun setStopAfterCurrentTrack(enabled: Boolean) {
+        _stopAfterCurrentTrack.value = enabled
+    }
+
+    fun toggleStopAfterCurrentTrack() {
+        _stopAfterCurrentTrack.value = !_stopAfterCurrentTrack.value
+    }
+
     fun playTrack(track: FileNode, playlist: List<FileNode>? = null) {
         val controller = mediaController ?: return
         
         controller.shuffleModeEnabled = false // Disable shuffle when playing a specific track
         
-        val effectivePlaylist = playlist ?: track.parent?.children?.filter { it.isFile } ?: listOf(track)
+        val effectivePlaylist = if (_stopAfterCurrentTrack.value) {
+            listOf(track)
+        } else {
+            playlist ?: track.parent?.children?.filter { it.isFile } ?: listOf(track)
+        }
 
         val mediaItems = effectivePlaylist.map {
             MediaItem.Builder()

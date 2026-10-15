@@ -11,6 +11,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
@@ -53,6 +54,7 @@ class MainActivity : ComponentActivity() {
                 val playbackDuration by viewModel.playbackDuration.collectAsState()
                 val playbackSpeed by viewModel.playbackSpeed.collectAsState()
                 val repeatMode by viewModel.repeatMode.collectAsState()
+                val stopAfterCurrentTrack by viewModel.stopAfterCurrentTrack.collectAsState()
 
                 var showPlaylistDialog by remember { mutableStateOf(false) }
                 var playlistName by remember { mutableStateOf("") }
@@ -121,7 +123,7 @@ class MainActivity : ComponentActivity() {
                 Scaffold(
                     modifier = Modifier.fillMaxSize(),
                     topBar = {
-                        Box(modifier = Modifier.fillMaxWidth().aspectRatio(510f / 148f)) {
+                        Box(modifier = Modifier.fillMaxWidth().statusBarsPadding().aspectRatio(510f / 148f)) {
                             Image(
                                 painter = painterResource(id = R.drawable.bandeau),
                                 contentDescription = null,
@@ -131,7 +133,9 @@ class MainActivity : ComponentActivity() {
                             Column(modifier = Modifier.fillMaxSize()) {
                                 // Zone du titre centrée
                                 Box(
-                                    modifier = Modifier.weight(1f).fillMaxWidth(),
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .fillMaxWidth(),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Text(
@@ -202,6 +206,28 @@ class MainActivity : ComponentActivity() {
                     }
                 ) { innerPadding ->
                     Column(modifier = Modifier.padding(innerPadding)) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { viewModel.toggleStopAfterCurrentTrack() }
+                                .padding(horizontal = 8.dp, vertical = 2.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.End
+                        ) {
+                            Checkbox(
+                                checked = stopAfterCurrentTrack,
+                                onCheckedChange = null,
+                                colors = CheckboxDefaults.colors(
+                                    checkedColor = MaterialTheme.colorScheme.primary
+                                )
+                            )
+                            Text(
+                                text = "Stop fin de morceau",
+                                style = MaterialTheme.typography.bodySmall,
+                                modifier = Modifier.padding(end = 4.dp)
+                            )
+                        }
+
                         if (currentTab == MusicTab.Explorer && editingPlaylist != null) {
                             Surface(
                                 color = MaterialTheme.colorScheme.secondaryContainer,
