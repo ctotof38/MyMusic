@@ -170,10 +170,31 @@ class MusicTreeViewModel(application: Application) : AndroidViewModel(applicatio
 
     fun setStopAfterCurrentTrack(enabled: Boolean) {
         _stopAfterCurrentTrack.value = enabled
+        if (enabled) {
+            applyStopAfterCurrentTrackToActiveQueue()
+        }
     }
 
     fun toggleStopAfterCurrentTrack() {
-        _stopAfterCurrentTrack.value = !_stopAfterCurrentTrack.value
+        val newMode = !_stopAfterCurrentTrack.value
+        _stopAfterCurrentTrack.value = newMode
+        if (newMode) {
+            applyStopAfterCurrentTrackToActiveQueue()
+        }
+    }
+
+    private fun applyStopAfterCurrentTrackToActiveQueue() {
+        val controller = mediaController ?: return
+        if (controller.mediaItemCount > 1) {
+            val currentIndex = controller.currentMediaItemIndex
+            val totalItems = controller.mediaItemCount
+            if (currentIndex + 1 < totalItems) {
+                controller.removeMediaItems(currentIndex + 1, totalItems)
+            }
+            if (currentIndex > 0) {
+                controller.removeMediaItems(0, currentIndex)
+            }
+        }
     }
 
     fun setFontScale(scale: Float) {
