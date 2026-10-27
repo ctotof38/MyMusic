@@ -66,6 +66,9 @@ class MusicTreeViewModel(application: Application) : AndroidViewModel(applicatio
     private val _stopAfterCurrentTrack = MutableStateFlow(false)
     val stopAfterCurrentTrack: StateFlow<Boolean> = _stopAfterCurrentTrack.asStateFlow()
 
+    private val _fontScale = MutableStateFlow(1.0f)
+    val fontScale: StateFlow<Float> = _fontScale.asStateFlow()
+
     private var mediaControllerFuture: ListenableFuture<MediaController>? = null
     private val mediaController: MediaController?
         get() = if (mediaControllerFuture?.isDone == true) mediaControllerFuture?.get() else null
@@ -168,6 +171,40 @@ class MusicTreeViewModel(application: Application) : AndroidViewModel(applicatio
 
     fun toggleStopAfterCurrentTrack() {
         _stopAfterCurrentTrack.value = !_stopAfterCurrentTrack.value
+    }
+
+    fun setFontScale(scale: Float) {
+        _fontScale.value = scale.coerceIn(1.0f, MAX_ZOOM_SCALE)
+    }
+
+    fun toggleZoom() {
+        _fontScale.value = if (_fontScale.value > 1.2f) 1.0f else MAX_ZOOM_SCALE
+    }
+
+    companion object {
+        const val MAX_ZOOM_SCALE = 1.6f
+    }
+
+    fun playUri(uri: android.net.Uri) {
+        val controller = mediaController ?: return
+        
+        controller.shuffleModeEnabled = false
+        val mediaItem = MediaItem.Builder()
+            .setMediaId(uri.toString())
+            .setUri(uri)
+            .build()
+
+        controller.setMediaItems(listOf(mediaItem))
+        controller.prepare()
+        controller.play()
+
+        val fileName = uri.lastPathSegment ?: "Fichier audio"
+        _currentTrack.value = FileNode(
+            name = fileName,
+            isFile = true,
+            fullPath = uri.toString(),
+            title = fileName
+        )
     }
 
     fun playTrack(track: FileNode, playlist: List<FileNode>? = null) {

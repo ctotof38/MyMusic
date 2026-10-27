@@ -37,7 +37,8 @@ fun PlaylistView(
     onMoveTrack: (Playlist, Int, Int) -> Unit,
     onToggleRepeat: () -> Unit,
     currentTrackPath: String?,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    fontScale: Float = 1.0f
 ) {
     if (editingPlaylist != null) {
         PlaylistDetailView(
@@ -51,6 +52,7 @@ fun PlaylistView(
             onMoveTrack = { from, to -> onMoveTrack(editingPlaylist, from, to) },
             onToggleRepeat = onToggleRepeat,
             currentTrackPath = currentTrackPath,
+            fontScale = fontScale,
             modifier = modifier
         )
     } else {
@@ -61,7 +63,7 @@ fun PlaylistView(
         } else {
             LazyColumn(modifier = modifier.fillMaxSize().padding(8.dp)) {
                 items(playlists) { playlist ->
-                    PlaylistItem(playlist, onDeletePlaylist, onSelectPlaylist)
+                    PlaylistItem(playlist, onDeletePlaylist, onSelectPlaylist, fontScale = fontScale)
                 }
             }
         }
@@ -80,6 +82,7 @@ fun PlaylistDetailView(
     onMoveTrack: (Int, Int) -> Unit,
     onToggleRepeat: () -> Unit,
     currentTrackPath: String?,
+    fontScale: Float = 1.0f,
     modifier: Modifier = Modifier
 ) {
     var draggedItemIndex by remember { mutableStateOf<Int?>(null) }
@@ -132,6 +135,7 @@ fun PlaylistDetailView(
                         onRemove = { onRemoveTrack(track) },
                         onPlay = { onPlayTrack(track) },
                         isCurrent = track.fullPath == currentTrackPath,
+                        fontScale = fontScale,
                         modifier = Modifier
                             .zIndex(if (isDragging) 1f else 0f)
                             .offset { IntOffset(0, offset.roundToInt()) }
@@ -185,44 +189,49 @@ fun TrackItem(
     onRemove: () -> Unit, 
     onPlay: () -> Unit, 
     isCurrent: Boolean,
+    fontScale: Float = 1.0f,
     modifier: Modifier = Modifier
 ) {
+    val bodyMediumSize = MaterialTheme.typography.bodyMedium.fontSize * fontScale
+    val bodySmallSize = MaterialTheme.typography.bodySmall.fontSize * fontScale
+    val iconSize = (20 * fontScale).dp
+
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .padding(vertical = 2.dp)
+            .padding(vertical = (2 * fontScale).dp)
             .clickable { onPlay() },
         colors = CardDefaults.cardColors(
             containerColor = if (isCurrent) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant
         )
     ) {
         Row(
-            modifier = Modifier.padding(8.dp),
+            modifier = Modifier.padding((8 * fontScale).dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
                 imageVector = Icons.Default.MusicNote,
                 contentDescription = null,
                 tint = if (isCurrent) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(20.dp)
+                modifier = Modifier.size(iconSize)
             )
             Column(modifier = Modifier.weight(1f).padding(horizontal = 8.dp)) {
                 Text(
                     text = track.displayName,
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MaterialTheme.typography.bodyMedium.copy(fontSize = bodyMediumSize),
                     fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal,
                     color = if (isCurrent) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                 )
                 if (!track.artist.isNullOrBlank() && (track.artist != "<unknown>")) {
                     Text(
                         text = track.artist,
-                        style = MaterialTheme.typography.bodySmall,
+                        style = MaterialTheme.typography.bodySmall.copy(fontSize = bodySmallSize),
                         color = if (isCurrent) MaterialTheme.colorScheme.primary.copy(alpha = 0.7f) else MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
             IconButton(onClick = onRemove) {
-                Icon(Icons.Default.Close, contentDescription = "Enlever", modifier = Modifier.size(20.dp))
+                Icon(Icons.Default.Close, contentDescription = "Enlever", modifier = Modifier.size(iconSize))
             }
         }
     }
@@ -232,35 +241,44 @@ fun TrackItem(
 fun PlaylistItem(
     playlist: Playlist,
     onDeletePlaylist: (Playlist) -> Unit,
-    onSelectPlaylist: (Playlist) -> Unit
+    onSelectPlaylist: (Playlist) -> Unit,
+    fontScale: Float = 1.0f
 ) {
+    val titleMediumSize = MaterialTheme.typography.titleMedium.fontSize * fontScale
+    val bodySmallSize = MaterialTheme.typography.bodySmall.fontSize * fontScale
+    val iconSize = (24 * fontScale).dp
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onSelectPlaylist(playlist) }
-            .padding(vertical = 4.dp),
+            .padding(vertical = (4 * fontScale).dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Row(
             modifier = Modifier
-                .padding(16.dp)
+                .padding((16 * fontScale).dp)
                 .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
                 imageVector = Icons.Default.QueueMusic,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(iconSize)
             )
             Column(
                 modifier = Modifier
                     .weight(1f)
                     .padding(horizontal = 16.dp)
             ) {
-                Text(text = playlist.name, style = MaterialTheme.typography.titleMedium)
+                Text(
+                    text = playlist.name,
+                    style = MaterialTheme.typography.titleMedium.copy(fontSize = titleMediumSize)
+                )
                 Text(
                     text = "${playlist.tracks.size} titre(s)",
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.bodySmall.copy(fontSize = bodySmallSize),
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
@@ -268,7 +286,8 @@ fun PlaylistItem(
                 Icon(
                     imageVector = Icons.Default.Delete,
                     contentDescription = "Supprimer",
-                    tint = MaterialTheme.colorScheme.error
+                    tint = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.size(iconSize)
                 )
             }
         }

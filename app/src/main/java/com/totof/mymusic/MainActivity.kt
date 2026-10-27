@@ -1,6 +1,7 @@
 package com.totof.mymusic
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -18,6 +19,8 @@ import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.ZoomIn
+import androidx.compose.material.icons.filled.ZoomOut
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -55,6 +58,7 @@ class MainActivity : ComponentActivity() {
                 val playbackSpeed by viewModel.playbackSpeed.collectAsState()
                 val repeatMode by viewModel.repeatMode.collectAsState()
                 val stopAfterCurrentTrack by viewModel.stopAfterCurrentTrack.collectAsState()
+                val fontScale by viewModel.fontScale.collectAsState()
 
                 var showPlaylistDialog by remember { mutableStateOf(false) }
                 var playlistName by remember { mutableStateOf("") }
@@ -88,6 +92,10 @@ class MainActivity : ComponentActivity() {
                     } else {
                         launcher.launch(permission)
                     }
+                }
+
+                LaunchedEffect(intent) {
+                    handleIntent(intent, viewModel)
                 }
 
                 if (showPlaylistDialog) {
@@ -209,23 +217,41 @@ class MainActivity : ComponentActivity() {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable { viewModel.toggleStopAfterCurrentTrack() }
                                 .padding(horizontal = 8.dp, vertical = 2.dp),
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.End
+                            horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Checkbox(
-                                checked = stopAfterCurrentTrack,
-                                onCheckedChange = null,
-                                colors = CheckboxDefaults.colors(
-                                    checkedColor = MaterialTheme.colorScheme.primary
+                            FilterChip(
+                                selected = fontScale > 1.2f,
+                                onClick = { viewModel.toggleZoom() },
+                                label = { Text(if (fontScale > 1.2f) "Zoom x%.1f".format(fontScale) else "Zoom x1") },
+                                leadingIcon = {
+                                    Icon(
+                                        imageVector = if (fontScale > 1.2f) Icons.Default.ZoomOut else Icons.Default.ZoomIn,
+                                        contentDescription = "Zoomer / Dézoomer",
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                            )
+
+                            Row(
+                                modifier = Modifier
+                                    .clickable { viewModel.toggleStopAfterCurrentTrack() },
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Checkbox(
+                                    checked = stopAfterCurrentTrack,
+                                    onCheckedChange = null,
+                                    colors = CheckboxDefaults.colors(
+                                        checkedColor = MaterialTheme.colorScheme.primary
+                                    )
                                 )
-                            )
-                            Text(
-                                text = "Stop fin de morceau",
-                                style = MaterialTheme.typography.bodySmall,
-                                modifier = Modifier.padding(end = 4.dp)
-                            )
+                                Text(
+                                    text = "Stop fin de morceau",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    modifier = Modifier.padding(end = 4.dp)
+                                )
+                            }
                         }
 
                         if (currentTab == MusicTab.Explorer && editingPlaylist != null) {
@@ -256,7 +282,8 @@ class MainActivity : ComponentActivity() {
                                     selectedPaths = selectedPaths,
                                     onToggleSelection = { viewModel.toggleSelection(it) },
                                     onPlayTrack = { viewModel.playTrack(it) },
-                                    currentTrackPath = currentTrack?.fullPath
+                                    currentTrackPath = currentTrack?.fullPath,
+                                    fontScale = fontScale
                                 )
                             }
                             MusicTab.Playlists -> {
@@ -272,13 +299,26 @@ class MainActivity : ComponentActivity() {
                                     onPlayPlaylist = { playlist, shuffle -> viewModel.playPlaylist(playlist, shuffle) },
                                     onMoveTrack = { playlist, from, to -> viewModel.moveTrack(playlist, from, to) },
                                     onToggleRepeat = { viewModel.toggleRepeatMode() },
-                                    currentTrackPath = currentTrack?.fullPath
+                                    currentTrackPath = currentTrack?.fullPath,
+                                    fontScale = fontScale
                                 )
                             }
                         }
                     }
                 }
             }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+    }
+
+    private fun handleIntent(intent: Intent?, viewModel: MusicTreeViewModel) {
+        if (intent?.action == Intent.ACTION_VIEW) {
+            val uri = intent.data ?: return
+            viewModel.playUri(uri)
         }
     }
 }
