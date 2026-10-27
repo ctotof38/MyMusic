@@ -41,9 +41,13 @@ import com.totof.mymusic.ui.PlayerControlBar
 import com.totof.mymusic.ui.theme.MyMusicTheme
 
 class MainActivity : ComponentActivity() {
+    private var currentIntentState = mutableStateOf<Intent?>(null)
+    private var lastHandledIntent: Intent? = null
+
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        currentIntentState.value = intent
         enableEdgeToEdge()
         setContent {
             MyMusicTheme {
@@ -119,8 +123,9 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
-                LaunchedEffect(intent) {
-                    handleIntent(intent, viewModel)
+                val currentIntent by currentIntentState
+                LaunchedEffect(currentIntent) {
+                    handleIntent(currentIntent, viewModel)
                 }
 
                 if (showPlaylistDialog) {
@@ -342,10 +347,12 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
+        currentIntentState.value = intent
     }
 
     private fun handleIntent(intent: Intent?, viewModel: MusicTreeViewModel) {
-        if (intent?.action == Intent.ACTION_VIEW) {
+        if (intent != null && intent != lastHandledIntent && intent.action == Intent.ACTION_VIEW) {
+            lastHandledIntent = intent
             val uri = intent.data ?: return
             viewModel.playUri(uri)
         }

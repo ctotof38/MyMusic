@@ -192,9 +192,27 @@ class MusicTreeViewModel(application: Application) : AndroidViewModel(applicatio
         const val MAX_ZOOM_SCALE = 1.6f
     }
 
+    private var pendingUri: android.net.Uri? = null
+
     fun playUri(uri: android.net.Uri) {
-        val controller = mediaController ?: return
-        
+        pendingUri = uri
+        val controller = mediaController
+        if (controller == null) {
+            mediaControllerFuture?.addListener({
+                val asyncController = mediaController
+                val uriToPlay = pendingUri
+                if (asyncController != null && uriToPlay != null) {
+                    executePlayUri(asyncController, uriToPlay)
+                    pendingUri = null
+                }
+            }, MoreExecutors.directExecutor())
+        } else {
+            executePlayUri(controller, uri)
+            pendingUri = null
+        }
+    }
+
+    private fun executePlayUri(controller: MediaController, uri: android.net.Uri) {
         controller.shuffleModeEnabled = false
         val mediaItem = MediaItem.Builder()
             .setMediaId(uri.toString())
