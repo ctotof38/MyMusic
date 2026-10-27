@@ -390,6 +390,131 @@ class MusicTreeViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
 
+    fun exportPlaylistsToUri(uri: android.net.Uri, onResult: (Boolean, String) -> Unit) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val jsonArray = org.json.JSONArray()
+                val playlistsList = _playlists.value
+                playlistsList.forEach { playlist ->
+                    val playlistObj = org.json.JSONObject()
+                    playlistObj.put("name", playlist.name)
+                    val tracksArray = org.json.JSONArray()
+                    playlist.tracks.forEach { track ->
+                        val trackObj = org.json.JSONObject()
+                        trackObj.put("name", track.name)
+                        trackObj.put("fullPath", track.fullPath)
+                        trackObj.put("title", track.title ?: "")
+                        trackObj.put("artist", track.artist ?: "")
+                        tracksArray.put(trackObj)
+                    }
+                    playlistObj.put("tracks", tracksArray)
+                    jsonArray.put(playlistObj)
+                }
+
+                getApplication<Application>().contentResolver.openOutputStream(uri)?.use { outputStream ->
+                    outputStream.write(jsonArray.toString(2).toByteArray(Charsets.UTF_8))
+                }
+                
+                launch(Dispatchers.Main) {
+                    onResult(true, "${playlistsList.size} playlist(s) exportée(s)")
+                }
+            } catch (e: Exception) {
+                launch(Dispatchers.Main) {
+                    onResult(false, e.message ?: "Erreur lors de l'exportation")
+                }
+            }
+        }
+    }
+
+    fun importPlaylistsFromUri(uri: android.net.Uri, onResult: (Boolean, String) -> Unit) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val jsonString = getApplication<Application>().contentResolver.openInputStream(uri)?.use { inputStream ->
+                    inputStream.bufferedReader(Charsets.UTF_8).readText()
+                } ?: throw IllegalStateException("Impossible de lire le fichier")
+
+                val jsonArray = org.json.JSONArray(jsonString)
+
+                // Scan device files to resolve missing paths on reinstall or file move
+                val scanner = MusicScanner(getApplication())
+                val rootNode = scanner.scanForMp3s()
+                val allDeviceFiles = rootNode.getAllFiles()
+
+                var importedCount = 0
+
+                for (i in 0 until jsonArray.length()) {
+                    val playlistObj = jsonArray.getJSONObject(i)
+                    val playlistName = playlistObj.optString("name", "Playlist Importée")
+                    val tracksArray = playlistObj.optJSONArray("tracks") ?: org.json.JSONArray()
+
+                    val existingPlaylist = musicDao.getPlaylistByName(playlistName)
+                    val playlistId = if (existingPlaylist != null) {
+                        existingPlaylist.id
+                    } else {
+                        musicDao.insertPlaylist(PlaylistEntity(name = playlistName))
+                    }
+
+                    val currentTracks = musicDao.getTracksForPlaylistSync(playlistId)
+                    var currentPosition = currentTracks.size
+
+                    val trackEntitiesToInsert = mutableListOf<TrackEntity>()
+
+                    for (j in 0 until tracksArray.length()) {
+                        val trackObj = tracksArray.getJSONObject(j)
+                        val originalPath = trackObj.optString("fullPath", "")
+                        val fileName = trackObj.optString("name", "")
+                        val title = trackObj.optString("title", "").ifBlank { null }
+                        val artist = trackObj.optString("artist", "").ifBlank { null }
+
+                        var resolvedPath = originalPath
+                        var resolvedName = fileName
+
+                        // If originalPath does not exist on this device, search scanned device files
+                        if (originalPath.isBlank() || !java.io.File(originalPath).exists()) {
+                            val match = allDeviceFiles.find { deviceFile ->
+                                deviceFile.name.equals(fileName, ignoreCase = true) ||
+                                (title != null && deviceFile.title.equals(title, ignoreCase = true))
+                            }
+                            if (match != null) {
+                                resolvedPath = match.fullPath
+                                resolvedName = match.name
+                            }
+                        }
+
+                        val alreadyInPlaylist = currentTracks.any { it.fullPath == resolvedPath } ||
+                                                trackEntitiesToInsert.any { it.fullPath == resolvedPath }
+
+                        if (resolvedPath.isNotBlank() && !alreadyInPlaylist) {
+                            trackEntitiesToInsert.add(
+                                TrackEntity(
+                                    playlistId = playlistId,
+                                    name = if (resolvedName.isNotBlank()) resolvedName else "Piste",
+                                    fullPath = resolvedPath,
+                                    title = title,
+                                    artist = artist,
+                                    position = currentPosition++
+                                )
+                            )
+                        }
+                    }
+
+                    if (trackEntitiesToInsert.isNotEmpty()) {
+                        musicDao.insertTracks(trackEntitiesToInsert)
+                    }
+                    importedCount++
+                }
+
+                launch(Dispatchers.Main) {
+                    onResult(true, "$importedCount playlist(s) importée(s)")
+                }
+            } catch (e: Exception) {
+                launch(Dispatchers.Main) {
+                    onResult(false, e.message ?: "Erreur lors de l'importation")
+                }
+            }
+        }
+    }
+
     fun moveTrack(playlist: Playlist, fromIndex: Int, toIndex: Int) {
         if (fromIndex == toIndex) return
         

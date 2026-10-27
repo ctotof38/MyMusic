@@ -37,8 +37,10 @@ fun PlaylistView(
     onMoveTrack: (Playlist, Int, Int) -> Unit,
     onToggleRepeat: () -> Unit,
     currentTrackPath: String?,
-    modifier: Modifier = Modifier,
-    fontScale: Float = 1.0f
+    onExportPlaylists: () -> Unit = {},
+    onImportPlaylists: () -> Unit = {},
+    fontScale: Float = 1.0f,
+    modifier: Modifier = Modifier
 ) {
     if (editingPlaylist != null) {
         PlaylistDetailView(
@@ -56,14 +58,60 @@ fun PlaylistView(
             modifier = modifier
         )
     } else {
-        if (playlists.isEmpty()) {
-            Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(text = "Aucune playlist créée", style = MaterialTheme.typography.bodyLarge)
+        Column(modifier = modifier.fillMaxSize().padding(8.dp)) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Playlists (${playlists.size})",
+                    style = MaterialTheme.typography.titleMedium
+                )
+
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedButton(
+                        onClick = onExportPlaylists,
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Upload,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Exporter", style = MaterialTheme.typography.labelMedium)
+                    }
+
+                    Button(
+                        onClick = onImportPlaylists,
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Download,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Importer", style = MaterialTheme.typography.labelMedium)
+                    }
+                }
             }
-        } else {
-            LazyColumn(modifier = modifier.fillMaxSize().padding(8.dp)) {
-                items(playlists) { playlist ->
-                    PlaylistItem(playlist, onDeletePlaylist, onSelectPlaylist, fontScale = fontScale)
+
+            if (playlists.isEmpty()) {
+                Box(
+                    modifier = Modifier.weight(1f).fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(text = "Aucune playlist créée", style = MaterialTheme.typography.bodyLarge)
+                }
+            } else {
+                LazyColumn(modifier = Modifier.weight(1f)) {
+                    items(playlists) { playlist ->
+                        PlaylistItem(playlist, onDeletePlaylist, onSelectPlaylist, fontScale = fontScale)
+                    }
                 }
             }
         }

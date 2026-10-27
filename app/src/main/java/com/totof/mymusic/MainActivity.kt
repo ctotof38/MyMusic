@@ -3,6 +3,7 @@ package com.totof.mymusic
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.widget.Toast
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -26,6 +27,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
@@ -72,6 +74,28 @@ class MainActivity : ComponentActivity() {
                     Manifest.permission.READ_MEDIA_AUDIO
                 } else {
                     Manifest.permission.READ_EXTERNAL_STORAGE
+                }
+
+                val context = LocalContext.current
+
+                val exportLauncher = rememberLauncherForActivityResult(
+                    contract = ActivityResultContracts.CreateDocument("application/json")
+                ) { uri ->
+                    if (uri != null) {
+                        viewModel.exportPlaylistsToUri(uri) { _, msg ->
+                            Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                }
+
+                val importLauncher = rememberLauncherForActivityResult(
+                    contract = ActivityResultContracts.OpenDocument()
+                ) { uri ->
+                    if (uri != null) {
+                        viewModel.importPlaylistsFromUri(uri) { _, msg ->
+                            Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                        }
+                    }
                 }
 
                 val launcher = rememberLauncherForActivityResult(
@@ -300,6 +324,8 @@ class MainActivity : ComponentActivity() {
                                     onMoveTrack = { playlist, from, to -> viewModel.moveTrack(playlist, from, to) },
                                     onToggleRepeat = { viewModel.toggleRepeatMode() },
                                     currentTrackPath = currentTrack?.fullPath,
+                                    onExportPlaylists = { exportLauncher.launch("mymusic_playlists.json") },
+                                    onImportPlaylists = { importLauncher.launch(arrayOf("application/json", "*/*")) },
                                     fontScale = fontScale
                                 )
                             }
