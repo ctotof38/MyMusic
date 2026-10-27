@@ -69,6 +69,9 @@ class MusicTreeViewModel(application: Application) : AndroidViewModel(applicatio
     private val _fontScale = MutableStateFlow(1.0f)
     val fontScale: StateFlow<Float> = _fontScale.asStateFlow()
 
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
+
     private var mediaControllerFuture: ListenableFuture<MediaController>? = null
     private val mediaController: MediaController?
         get() = if (mediaControllerFuture?.isDone == true) mediaControllerFuture?.get() else null
@@ -179,6 +182,10 @@ class MusicTreeViewModel(application: Application) : AndroidViewModel(applicatio
 
     fun toggleZoom() {
         _fontScale.value = if (_fontScale.value > 1.2f) 1.0f else MAX_ZOOM_SCALE
+    }
+
+    fun setSearchQuery(query: String) {
+        _searchQuery.value = query
     }
 
     companion object {

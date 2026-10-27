@@ -61,6 +61,7 @@ class MainActivity : ComponentActivity() {
                 val repeatMode by viewModel.repeatMode.collectAsState()
                 val stopAfterCurrentTrack by viewModel.stopAfterCurrentTrack.collectAsState()
                 val fontScale by viewModel.fontScale.collectAsState()
+                val searchQuery by viewModel.searchQuery.collectAsState()
 
                 var showPlaylistDialog by remember { mutableStateOf(false) }
                 var playlistName by remember { mutableStateOf("") }
@@ -307,6 +308,8 @@ class MainActivity : ComponentActivity() {
                                     onToggleSelection = { viewModel.toggleSelection(it) },
                                     onPlayTrack = { viewModel.playTrack(it) },
                                     currentTrackPath = currentTrack?.fullPath,
+                                    searchQuery = searchQuery,
+                                    onSearchQueryChange = { viewModel.setSearchQuery(it) },
                                     fontScale = fontScale
                                 )
                             }
